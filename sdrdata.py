@@ -77,6 +77,7 @@ class Dataset:
         Returns:
             xsdfreq : fft frequency
             xsd     : cross spectral density in dBc/Hz
+        testtesttest
 
         """
         xsdfreq, xsd = signal.csd(self.phase, other.phase, fs=self.fs,
@@ -86,4 +87,3 @@ class Dataset:
         xsd = 10*np.log10(xsd) - 3 # in dBc/Hz
 
         return (xsdfreq, xsd)
-
