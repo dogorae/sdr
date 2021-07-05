@@ -1,7 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.signal as signal
-from scipy.fft import fft
 
 class Dataset:
     """
@@ -34,6 +32,8 @@ class Dataset:
         # Takuma says float64 is important
 
         # Frequency domain
+        self.freq = None
+        self.phase_noise = None
         self.compute_phase_noise()  # Initializes self.freq and self.phase_noise
         
     def __load(self, filepath):
@@ -50,20 +50,21 @@ class Dataset:
         return signal.detrend(unwrapped_phase, type='linear')
 
     def compute_phase_noise(self):
-        """Updates 'freq' and 'phase_noise' attributes
+        """Updates 'freq' and 'phase_noise' attributes based on self.fftpts
         
         Args:
-            fftpts: number of points to use for the Welch method (scipy.signal.welch)
+            None
         
         Returns:
-            None. Only used for the side effect of updating 'freq' and 'phase_noise'
+            None.
+            Only used for the side effect of updating 'freq' and 'phase_noise'
 
         """
         freq, psd = signal.welch(self.phase, self.fs,
                                  nperseg=self.fftpts,
                                  window='hann',
                                  detrend='linear') # Takuma detrends his data too
-        phase_noise = 10*np.log10(psd) - 3 # in dBc/Hz
+        phase_noise = 10*np.log10(np.abs(psd)) - 3 # in dBc/Hz
         
         self.freq = freq
         self.phase_noise = phase_noise
@@ -72,18 +73,20 @@ class Dataset:
         """Computes the cross spectral density with another dataset
         
         Args:
-            dataset : another Dataset instance to compute xsd with
+            other : another Dataset instance to compute xsd with
 
         Returns:
             xsdfreq : fft frequency
             xsd     : cross spectral density in dBc/Hz
-        testtesttest
 
         """
-        xsdfreq, xsd = signal.csd(self.phase, other.phase, fs=self.fs,
-                         nperseg=self.fftpts,
-                         window='hann',
-                         detrend='linear')
-        xsd = 10*np.log10(xsd) - 3 # in dBc/Hz
-
-        return (xsdfreq, xsd)
+        if self.fftpts != other.fftpts:
+            raise Exception('Both datasets should have the same fftpts')
+        else:
+            xsdfreq, xsd = signal.csd(self.phase, other.phase, fs=self.fs,
+                             nperseg=self.fftpts,
+                             window='hann',
+                             detrend='linear')
+            xsd = 10*np.log10(np.abs(xsd)) - 3 # in dBc/Hz
+    
+            return (xsdfreq, xsd)
